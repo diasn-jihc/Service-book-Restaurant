@@ -39,6 +39,7 @@ class ServiceBookApp extends StatelessWidget {
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider<ApiClient>.value(value: api),
+        RepositoryProvider<StorageService>.value(value: storage),
         RepositoryProvider<FileService>(create: (_) => FileService()),
       ],
       child: MultiBlocProvider(

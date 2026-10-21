@@ -8,10 +8,12 @@ class WorkerForm extends StatefulWidget {
     super.key,
     required this.submitLabel,
     required this.onSubmit,
+    this.onSubmitWithPassword,
   });
 
   final String submitLabel;
   final void Function(Worker worker) onSubmit;
+  final void Function(Worker worker, String password)? onSubmitWithPassword;
 
   @override
   State<WorkerForm> createState() => _WorkerFormState();
@@ -21,6 +23,8 @@ class _WorkerFormState extends State<WorkerForm> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
   late final TextEditingController _phoneCtrl;
+  late final TextEditingController _passwordCtrl;
+  bool _obscurePassword = true;
   WorkerRole _role = WorkerRole.waiter;
 
   @override
@@ -28,12 +32,14 @@ class _WorkerFormState extends State<WorkerForm> {
     super.initState();
     _nameCtrl = TextEditingController();
     _phoneCtrl = TextEditingController();
+    _passwordCtrl = TextEditingController();
   }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
+    _passwordCtrl.dispose();
     super.dispose();
   }
 
@@ -63,7 +69,12 @@ class _WorkerFormState extends State<WorkerForm> {
       phone: _cleanPhone(_phoneCtrl.text),
       role: _role,
     );
-    widget.onSubmit(worker);
+    final submit = widget.onSubmitWithPassword;
+    if (submit != null) {
+      submit(worker, _passwordCtrl.text);
+    } else {
+      widget.onSubmit(worker);
+    }
   }
 
   @override
@@ -79,6 +90,7 @@ class _WorkerFormState extends State<WorkerForm> {
             decoration: fieldDecoration('Имя и фамилия', Icons.person),
             validator: _validateName,
           ),
+          if (widget.onSubmitWithPassword != null) ...[
           const SizedBox(height: 16),
           TextFormField(
             controller: _phoneCtrl,
@@ -93,6 +105,21 @@ class _WorkerFormState extends State<WorkerForm> {
             ),
             validator: _validatePhone,
           ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _passwordCtrl,
+            obscureText: _obscurePassword,
+            decoration: fieldDecoration('Пароль (минимум 6 символов)', Icons.lock).copyWith(
+              suffixIcon: IconButton(
+                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+              ),
+            ),
+            validator: (value) => (value ?? '').length < 6
+                ? 'Пароль должен содержать минимум 6 символов'
+                : null,
+          ),
+          ],
           const SizedBox(height: 20),
           Text('Роль', style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: 8),

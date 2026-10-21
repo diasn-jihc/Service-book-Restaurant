@@ -6,7 +6,13 @@ abstract class AuthEvent {}
 
 class UserRegistered extends AuthEvent {
   final Worker user;
-  UserRegistered(this.user);
+  final String password;
+  UserRegistered(this.user, this.password);
+}
+
+class UserLoggedIn extends AuthEvent {
+  final Worker user;
+  UserLoggedIn(this.user);
 }
 
 class UserLoggedOut extends AuthEvent {}
@@ -23,6 +29,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       : _storage = storage,
         super(AuthState(storage.loadUser())) {
     on<UserRegistered>((event, emit) async {
+      await _storage.savePassword(event.user.phone, event.password);
+      await _storage.saveWorkers([
+        ..._storage.loadWorkers().where((worker) => worker.phone != event.user.phone),
+        event.user,
+      ]);
+      await _storage.saveUser(event.user);
+      emit(AuthState(event.user));
+    });
+
+    on<UserLoggedIn>((event, emit) async {
       await _storage.saveUser(event.user);
       emit(AuthState(event.user));
     });

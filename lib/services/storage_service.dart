@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/checklist_item.dart';
 import '../models/service_entry.dart';
@@ -38,6 +39,26 @@ class StorageService {
       _prefs.setString('user', jsonEncode(user.toJson()));
 
   Future<void> clearUser() => _prefs.remove('user');
+
+  String _passwordKey(String phone) => 'password_${sha256.convert(utf8.encode(phone))}';
+
+  Future<void> savePassword(String phone, String password) async {
+    final salt = DateTime.now().microsecondsSinceEpoch.toString();
+    final digest = sha256.convert(utf8.encode('$salt:$password')).toString();
+    await _prefs.setString(_passwordKey(phone), '$salt:$digest');
+  }
+
+  bool verifyPassword(String phone, String password) {
+    final saved = _prefs.getString(_passwordKey(phone));
+    if (saved == null) return false;
+    final separator = saved.indexOf(':');
+    if (separator < 0) return false;
+    final salt = saved.substring(0, separator);
+    final digest = saved.substring(separator + 1);
+    return digest == sha256.convert(utf8.encode('$salt:$password')).toString();
+  }
+
+  bool hasPassword(String phone) => _prefs.containsKey(_passwordKey(phone));
 
   List<Worker> loadWorkers() => _readList('workers', Worker.fromJson) ?? [];
 
