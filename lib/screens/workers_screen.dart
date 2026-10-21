@@ -5,6 +5,7 @@ import '../blocs/workers_bloc.dart';
 import '../models/worker.dart';
 import '../utils/actions.dart';
 import '../widgets/app_card.dart';
+import 'edit_worker_screen.dart';
 
 class WorkersScreen extends StatefulWidget {
   const WorkersScreen({super.key});
@@ -15,6 +16,15 @@ class WorkersScreen extends StatefulWidget {
 
 class _WorkersScreenState extends State<WorkersScreen> {
   String _query = '';
+
+  Future<void> _edit(BuildContext context, Worker worker) async {
+    final updated = await Navigator.of(context).push<Worker>(
+      MaterialPageRoute(builder: (_) => EditWorkerScreen(worker: worker)),
+    );
+    if (updated != null && context.mounted) {
+      context.read<WorkersBloc>().add(WorkerUpdated(updated));
+    }
+  }
 
   Future<void> _remove(BuildContext context, Worker worker) async {
     final ok = await askConfirm(
@@ -108,6 +118,11 @@ class _WorkersScreenState extends State<WorkersScreen> {
                         ),
                       ],
                     ),
+                  ),
+                  IconButton(
+                    tooltip: 'Изменить сотрудника',
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () => _edit(context, worker),
                   ),
                   if (worker.id != me?.id)
                     IconButton(
