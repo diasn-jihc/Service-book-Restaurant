@@ -6,13 +6,20 @@ import '../models/worker.dart';
 import '../utils/actions.dart';
 import '../widgets/app_card.dart';
 
-class WorkersScreen extends StatelessWidget {
+class WorkersScreen extends StatefulWidget {
   const WorkersScreen({super.key});
+
+  @override
+  State<WorkersScreen> createState() => _WorkersScreenState();
+}
+
+class _WorkersScreenState extends State<WorkersScreen> {
+  String _query = '';
 
   Future<void> _remove(BuildContext context, Worker worker) async {
     final ok = await askConfirm(
       context,
-      title: 'Удалить рабочего?',
+      title: 'Удалить сотрудника?',
       text: worker.fullName,
     );
     if (ok && context.mounted) {
@@ -25,8 +32,15 @@ class WorkersScreen extends StatelessWidget {
     final workers = [...context.watch<WorkersBloc>().state.workers];
     final me = context.watch<AuthBloc>().state.user;
     final accent = Theme.of(context).colorScheme.primary;
+    final query = _query.trim().toLowerCase();
+    final filtered = workers.where((worker) {
+      return query.isEmpty ||
+          worker.fullName.toLowerCase().contains(query) ||
+          worker.phone.toLowerCase().contains(query) ||
+          worker.role.title.toLowerCase().contains(query);
+    }).toList();
 
-    workers.sort((a, b) {
+    filtered.sort((a, b) {
       final byRole = a.role.index.compareTo(b.role.index);
       return byRole != 0 ? byRole : a.fullName.compareTo(b.fullName);
     });
@@ -34,60 +48,83 @@ class WorkersScreen extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
       children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Text(
-            'Всего рабочих: ${workers.length}',
-            style: Theme.of(context).textTheme.titleMedium,
+        Text('${workers.length} сотрудников',
+            style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 12),
+        TextField(
+          onChanged: (value) => setState(() => _query = value),
+          decoration: InputDecoration(
+            prefixIcon: const Icon(Icons.search),
+            hintText: 'Поиск по имени, телефону или должности',
+            suffixIcon: _query.isEmpty
+                ? null
+                : IconButton(
+                    tooltip: 'Очистить поиск',
+                    onPressed: () => setState(() => _query = ''),
+                    icon: const Icon(Icons.clear),
+                  ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
           ),
         ),
-        for (final worker in workers) ...[
-          AppCard(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: accent,
-                  child: Icon(worker.role.icon),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        worker.id == me?.id
-                            ? '${worker.fullName} (вы)'
-                            : worker.fullName,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      Text(worker.role.title),
-                      Row(
-                        children: [
-                          const Icon(Icons.phone, size: 14),
-                          const SizedBox(width: 4),
-                          Text(worker.phone),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                if (worker.id != me?.id)
-                  IconButton(
-                    tooltip: 'Удалить',
-                    icon: const Icon(Icons.delete_outline),
-                    onPressed: () => _remove(context, worker),
-                  ),
-              ],
+        const SizedBox(height: 12),
+        if (filtered.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
+            child: Text(
+              workers.isEmpty
+                  ? 'Сотрудников пока нет. Добавьте первого.'
+                  : 'По запросу «${_query.trim()}» ничего не найдено.',
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 8),
-        ],
+          )
+        else
+          for (final worker in filtered) ...[
+            AppCard(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: accent,
+                    child: Icon(worker.role.icon),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          worker.id == me?.id
+                              ? '${worker.fullName} (вы)'
+                              : worker.fullName,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        Text(worker.role.title),
+                        Row(
+                          children: [
+                            const Icon(Icons.phone, size: 14),
+                            const SizedBox(width: 4),
+                            Text(worker.phone),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (worker.id != me?.id)
+                    IconButton(
+                      tooltip: 'Удалить',
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () => _remove(context, worker),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
         const SizedBox(height: 8),
         FilledButton.icon(
           onPressed: () => openAddWorker(context),
           icon: const Icon(Icons.person_add),
-          label: const Text('Добавить рабочего'),
+          label: const Text('Добавить сотрудника'),
         ),
       ],
     );
