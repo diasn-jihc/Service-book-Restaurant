@@ -4,6 +4,7 @@ import '../blocs/auth_bloc.dart';
 import '../blocs/workers_bloc.dart';
 import '../services/storage_service.dart';
 import '../utils/actions.dart';
+import '../utils/phone_utils.dart';
 import '../widgets/field_decoration.dart';
 import 'registration_screen.dart';
 
@@ -29,7 +30,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _login() {
     if (!_formKey.currentState!.validate()) return;
-    final phone = _phone.text.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+    final phone = normalizePhone(_phone.text);
     final storage = context.read<StorageService>();
     final matches = context
         .read<WorkersBloc>()
@@ -72,9 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             'Номер телефона', Icons.phone,
                             hint: '+77011234567'),
                         validator: (value) {
-                          final normalized = (value ?? '')
-                              .replaceAll(RegExp(r'[\s\-\(\)]'), '');
-                          return RegExp(r'^\+?\d{10,15}$').hasMatch(normalized)
+                          return isValidPhone(value ?? '')
                               ? null
                               : 'Введите корректный номер телефона';
                         },

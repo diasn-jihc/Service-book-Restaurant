@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/worker.dart';
+import '../utils/phone_utils.dart';
 import 'field_decoration.dart';
 
 class WorkerForm extends StatefulWidget {
@@ -47,8 +48,6 @@ class _WorkerFormState extends State<WorkerForm> {
     super.dispose();
   }
 
-  String _cleanPhone(String text) => text.replaceAll(RegExp(r'[\s\-\(\)]'), '');
-
   String? _validateName(String? value) {
     final text = (value ?? '').trim();
     if (text.length < 3) return 'Введите имя и фамилию';
@@ -56,8 +55,7 @@ class _WorkerFormState extends State<WorkerForm> {
   }
 
   String? _validatePhone(String? value) {
-    final phone = _cleanPhone(value ?? '');
-    if (!RegExp(r'^\+?\d{10,15}$').hasMatch(phone)) {
+    if (!isValidPhone(value ?? '')) {
       return 'Введите номер, например +77011234567';
     }
     return null;
@@ -70,7 +68,7 @@ class _WorkerFormState extends State<WorkerForm> {
       id: widget.initialWorker?.id ??
           DateTime.now().microsecondsSinceEpoch.toString(),
       fullName: _nameCtrl.text.trim(),
-      phone: _cleanPhone(_phoneCtrl.text),
+      phone: normalizePhone(_phoneCtrl.text),
       role: _role,
     );
     final submit = widget.onSubmitWithPassword;
