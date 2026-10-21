@@ -103,7 +103,11 @@ class _JournalScreenState extends State<JournalScreen> {
         ),
         Expanded(
           child: shown.isEmpty
-              ? const Center(child: Text('Записей пока нет'))
+              ? Center(
+                  child: Text(entries.isEmpty
+                      ? 'Записей пока нет'
+                      : 'По выбранным фильтрам ничего не найдено'),
+                )
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 88),
                   itemCount: shown.length,
