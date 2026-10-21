@@ -68,6 +68,8 @@ class StorageService {
     await _prefs.remove(_passwordKey(oldPhone));
   }
 
+  Future<void> clearPassword(String phone) => _prefs.remove(_passwordKey(phone));
+
   List<Worker> loadWorkers() => _readList('workers', Worker.fromJson) ?? [];
 
   Future<void> saveWorkers(List<Worker> workers) =>

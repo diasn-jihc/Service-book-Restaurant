@@ -35,8 +35,12 @@ class WorkersBloc extends Bloc<WorkersEvent, WorkersState> {
     });
 
     on<WorkerRemoved>((event, emit) async {
+      final removed = state.workers.where((worker) => worker.id == event.id);
       final list = state.workers.where((w) => w.id != event.id).toList();
       await _storage.saveWorkers(list);
+      if (removed.isNotEmpty) {
+        await _storage.clearPassword(removed.first.phone);
+      }
       emit(WorkersState(list));
     });
 
