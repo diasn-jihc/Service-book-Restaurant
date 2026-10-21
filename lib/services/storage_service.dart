@@ -108,6 +108,13 @@ class StorageService {
 
   bool hasPassword(String phone) => _prefs.containsKey(_passwordKey(phone));
 
+  Future<void> upgradePasswordHash(String phone, String password) async {
+    final saved = _prefs.getString(_passwordKey(phone));
+    if (saved != null && !saved.startsWith('pbkdf2:')) {
+      await savePassword(phone, password);
+    }
+  }
+
   Future<void> movePassword(String oldPhone, String newPhone) async {
     if (oldPhone == newPhone) return;
     final saved = _prefs.getString(_passwordKey(oldPhone));

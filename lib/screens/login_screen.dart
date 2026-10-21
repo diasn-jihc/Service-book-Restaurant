@@ -31,12 +31,17 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
     final phone = _phone.text.replaceAll(RegExp(r'[\s\-\(\)]'), '');
     final storage = context.read<StorageService>();
-    final matches = context.read<WorkersBloc>().state.workers.where((item) => item.phone == phone);
+    final matches = context
+        .read<WorkersBloc>()
+        .state
+        .workers
+        .where((item) => item.phone == phone);
     final worker = matches.isEmpty ? null : matches.first;
     if (worker == null || !storage.verifyPassword(phone, _password.text)) {
       showMessage(context, 'Неверный номер телефона или пароль');
       return;
     }
+    storage.upgradePasswordHash(phone, _password.text);
     context.read<AuthBloc>().add(UserLoggedIn(worker));
   }
 
@@ -56,30 +61,47 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       const Icon(Icons.restaurant, size: 64),
                       const SizedBox(height: 16),
-                      Text('Войдите в аккаунт', textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall),
+                      Text('Войдите в аккаунт',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.headlineSmall),
                       const SizedBox(height: 24),
                       TextFormField(
                         controller: _phone,
                         keyboardType: TextInputType.phone,
-                        decoration: fieldDecoration('Номер телефона', Icons.phone, hint: '+77011234567'),
+                        decoration: fieldDecoration(
+                            'Номер телефона', Icons.phone,
+                            hint: '+77011234567'),
                         validator: (value) {
-                          final normalized = (value ?? '').replaceAll(RegExp(r'[\s\-\(\)]'), '');
-                          return RegExp(r'^\+?\d{10,15}$').hasMatch(normalized) ? null : 'Введите корректный номер телефона';
+                          final normalized = (value ?? '')
+                              .replaceAll(RegExp(r'[\s\-\(\)]'), '');
+                          return RegExp(r'^\+?\d{10,15}$').hasMatch(normalized)
+                              ? null
+                              : 'Введите корректный номер телефона';
                         },
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _password,
                         obscureText: _obscure,
-                        decoration: fieldDecoration('Пароль', Icons.lock).copyWith(
-                          suffixIcon: IconButton(onPressed: () => setState(() => _obscure = !_obscure), icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off)),
+                        decoration:
+                            fieldDecoration('Пароль', Icons.lock).copyWith(
+                          suffixIcon: IconButton(
+                              onPressed: () =>
+                                  setState(() => _obscure = !_obscure),
+                              icon: Icon(_obscure
+                                  ? Icons.visibility
+                                  : Icons.visibility_off)),
                         ),
-                        validator: (value) => (value ?? '').isEmpty ? 'Введите пароль' : null,
+                        validator: (value) =>
+                            (value ?? '').isEmpty ? 'Введите пароль' : null,
                       ),
                       const SizedBox(height: 24),
-                      FilledButton(onPressed: _login, child: const Text('Войти')),
+                      FilledButton(
+                          onPressed: _login, child: const Text('Войти')),
                       TextButton(
-                        onPressed: () => Navigator.of(context).pushReplacement(MaterialPageRoute<void>(builder: (_) => const RegistrationScreen())),
+                        onPressed: () => Navigator.of(context).pushReplacement(
+                            MaterialPageRoute<void>(
+                                builder: (_) => const RegistrationScreen())),
                         child: const Text('Нет аккаунта? Зарегистрироваться'),
                       ),
                     ],
