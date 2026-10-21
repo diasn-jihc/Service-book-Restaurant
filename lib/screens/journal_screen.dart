@@ -14,16 +14,69 @@ class JournalScreen extends StatefulWidget {
 
 class _JournalScreenState extends State<JournalScreen> {
   EntryCategory? _filter;
+  String _query = '';
+  bool? _resolvedFilter;
 
   @override
   Widget build(BuildContext context) {
     final accent = Theme.of(context).colorScheme.primary;
     final entries = context.watch<JournalBloc>().state.entries;
-    final shown =
-        entries.where((e) => _filter == null || e.category == _filter).toList();
+    final query = _query.trim().toLowerCase();
+    final shown = entries.where((entry) {
+      final matchesCategory = _filter == null || entry.category == _filter;
+      final matchesStatus =
+          _resolvedFilter == null || entry.resolved == _resolvedFilter;
+      final matchesQuery = query.isEmpty ||
+          entry.title.toLowerCase().contains(query) ||
+          entry.description.toLowerCase().contains(query) ||
+          entry.workerName.toLowerCase().contains(query);
+      return matchesCategory && matchesStatus && matchesQuery;
+    }).toList();
 
     return Column(
       children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: TextField(
+            onChanged: (value) => setState(() => _query = value),
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.search),
+              hintText: 'Поиск по записям и сотрудникам',
+              suffixIcon: _query.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: 'Очистить поиск',
+                      onPressed: () => setState(() => _query = ''),
+                      icon: const Icon(Icons.clear),
+                    ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+        ),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Row(
+            children: [
+              for (final option in <(String, bool?)>[
+                ('Все статусы', null),
+                ('Открытые', false),
+                ('Решённые', true),
+              ]) ...[
+                if (option != ('Все статусы', null)) const SizedBox(width: 8),
+                ChoiceChip(
+                  label: Text(option.$1),
+                  selected: _resolvedFilter == option.$2,
+                  selectedColor: accent,
+                  onSelected: (_) =>
+                      setState(() => _resolvedFilter = option.$2),
+                ),
+              ],
+            ],
+          ),
+        ),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
