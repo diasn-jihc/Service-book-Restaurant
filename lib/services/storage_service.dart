@@ -59,15 +59,19 @@ class StorageService {
     final saved = _prefs.getString(_passwordKey(phone));
     if (saved == null) return false;
     if (saved.startsWith('pbkdf2:')) {
-      final parts = saved.split(':');
-      if (parts.length != 4) return false;
-      final iterations = int.tryParse(parts[1]);
-      if (iterations == null || iterations < 1 || iterations > 1000000) {
+      try {
+        final parts = saved.split(':');
+        if (parts.length != 4) return false;
+        final iterations = int.tryParse(parts[1]);
+        if (iterations == null || iterations < 1 || iterations > 100000) {
+          return false;
+        }
+        final salt = base64Url.decode(parts[2]);
+        final actual = _derivePasswordHash(password, salt, iterations);
+        return _constantTimeEquals(actual, parts[3]);
+      } on FormatException {
         return false;
       }
-      final salt = base64Url.decode(parts[2]);
-      final actual = _derivePasswordHash(password, salt, iterations);
-      return _constantTimeEquals(actual, parts[3]);
     }
 
     // Read hashes created by earlier app versions until users change passwords.
