@@ -22,7 +22,7 @@ class _WorkersScreenState extends State<WorkersScreen> {
       MaterialPageRoute(builder: (_) => EditWorkerScreen(worker: worker)),
     );
     if (updated != null && context.mounted) {
-      context.read<WorkersBloc>().add(WorkerUpdated(updated));
+      context.read<WorkersBloc>().add(WorkerUpdated(updated, worker.phone));
       if (updated.id == context.read<AuthBloc>().state.user?.id) {
         context.read<AuthBloc>().add(UserProfileUpdated(updated, worker.phone));
       }

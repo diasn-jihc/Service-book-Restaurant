@@ -37,7 +37,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<UserRegistered>((event, emit) async {
       await _storage.savePassword(event.user.phone, event.password);
       await _storage.saveWorkers([
-        ..._storage.loadWorkers().where((worker) => worker.phone != event.user.phone),
+        ..._storage
+            .loadWorkers()
+            .where((worker) => worker.phone != event.user.phone),
         event.user,
       ]);
       await _storage.saveUser(event.user);
@@ -51,7 +53,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     on<UserProfileUpdated>((event, emit) async {
       if (state.user?.id != event.user.id) return;
-      await _storage.movePassword(event.previousPhone, event.user.phone);
       await _storage.saveUser(event.user);
       emit(AuthState(event.user));
     });
