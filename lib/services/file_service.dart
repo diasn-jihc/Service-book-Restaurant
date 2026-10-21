@@ -11,7 +11,7 @@ class FileService {
     if (kIsWeb) return null;
 
     final dir = await getApplicationDocumentsDirectory();
-    final stamp = DateFormat('yyyy-MM-dd_HH-mm').format(DateTime.now());
+    final stamp = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
     final file = File('${dir.path}/service_book_$stamp.txt');
     await file.writeAsString(text);
     return file.path;
@@ -31,6 +31,9 @@ String buildReport(List<ServiceEntry> entries, List<Worker> workers) {
   b.writeln();
 
   b.writeln('Записи журнала (${entries.length}):');
+  final resolvedCount = entries.where((entry) => entry.resolved).length;
+  b.writeln('Решено: $resolvedCount');
+  b.writeln('Требуют внимания: ${entries.length - resolvedCount}');
   for (final e in entries) {
     final status = e.resolved ? 'решено' : 'требует внимания';
     b.writeln('- ${dateTimeFormat.format(e.date)} | ${e.category.title} | '
