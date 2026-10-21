@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/checklist_item.dart';
@@ -40,22 +41,69 @@ class StorageService {
 
   Future<void> clearUser() => _prefs.remove('user');
 
-  String _passwordKey(String phone) => 'password_${sha256.convert(utf8.encode(phone))}';
+  String _passwordKey(String phone) =>
+      'password_${sha256.convert(utf8.encode(phone))}';
 
   Future<void> savePassword(String phone, String password) async {
-    final salt = DateTime.now().microsecondsSinceEpoch.toString();
-    final digest = sha256.convert(utf8.encode('$salt:$password')).toString();
-    await _prefs.setString(_passwordKey(phone), '$salt:$digest');
+    final random = Random.secure();
+    final salt = List<int>.generate(16, (_) => random.nextInt(256));
+    const iterations = 20000;
+    final digest = _derivePasswordHash(password, salt, iterations);
+    await _prefs.setString(
+      _passwordKey(phone),
+      'pbkdf2:$iterations:${base64UrlEncode(salt)}:$digest',
+    );
   }
 
   bool verifyPassword(String phone, String password) {
     final saved = _prefs.getString(_passwordKey(phone));
     if (saved == null) return false;
+    if (saved.startsWith('pbkdf2:')) {
+      final parts = saved.split(':');
+      if (parts.length != 4) return false;
+      final iterations = int.tryParse(parts[1]);
+      if (iterations == null || iterations < 1 || iterations > 1000000) {
+        return false;
+      }
+      final salt = base64Url.decode(parts[2]);
+      final actual = _derivePasswordHash(password, salt, iterations);
+      return _constantTimeEquals(actual, parts[3]);
+    }
+
+    // Read hashes created by earlier app versions until users change passwords.
     final separator = saved.indexOf(':');
     if (separator < 0) return false;
     final salt = saved.substring(0, separator);
     final digest = saved.substring(separator + 1);
-    return digest == sha256.convert(utf8.encode('$salt:$password')).toString();
+    return _constantTimeEquals(
+      digest,
+      sha256.convert(utf8.encode('$salt:$password')).toString(),
+    );
+  }
+
+  String _derivePasswordHash(String password, List<int> salt, int iterations) {
+    final hmac = Hmac(sha256, utf8.encode(password));
+    final block = [...salt, 0, 0, 0, 1];
+    var u = hmac.convert(block).bytes;
+    final result = [...u];
+    for (var i = 1; i < iterations; i++) {
+      u = hmac.convert(u).bytes;
+      for (var byte = 0; byte < result.length; byte++) {
+        result[byte] ^= u[byte];
+      }
+    }
+    return base64UrlEncode(result);
+  }
+
+  bool _constantTimeEquals(String a, String b) {
+    var difference = a.length ^ b.length;
+    final length = max(a.length, b.length);
+    for (var i = 0; i < length; i++) {
+      final left = i < a.length ? a.codeUnitAt(i) : 0;
+      final right = i < b.length ? b.codeUnitAt(i) : 0;
+      difference |= left ^ right;
+    }
+    return difference == 0;
   }
 
   bool hasPassword(String phone) => _prefs.containsKey(_passwordKey(phone));
@@ -68,7 +116,8 @@ class StorageService {
     await _prefs.remove(_passwordKey(oldPhone));
   }
 
-  Future<void> clearPassword(String phone) => _prefs.remove(_passwordKey(phone));
+  Future<void> clearPassword(String phone) =>
+      _prefs.remove(_passwordKey(phone));
 
   List<Worker> loadWorkers() => _readList('workers', Worker.fromJson) ?? [];
 
