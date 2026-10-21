@@ -95,6 +95,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
           children: [
             TextFormField(
               controller: _titleCtrl,
+              maxLength: 120,
               textCapitalization: TextCapitalization.sentences,
               decoration: fieldDecoration(
                 'Название',
@@ -122,7 +123,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
               ],
             ),
             const SizedBox(height: 20),
-            Text('Ответственный', style: Theme.of(context).textTheme.titleSmall),
+            Text('Ответственный',
+                style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -141,6 +143,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
             const SizedBox(height: 20),
             TextFormField(
               controller: _descCtrl,
+              maxLength: 1000,
               maxLines: 4,
               textCapitalization: TextCapitalization.sentences,
               decoration: fieldDecoration('Описание', Icons.notes),
