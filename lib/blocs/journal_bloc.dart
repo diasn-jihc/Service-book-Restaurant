@@ -88,13 +88,23 @@ class JournalBloc extends Bloc<JournalEvent, JournalState> {
     return copy;
   }
 
+  static bool _sameContent(ServiceEntry a, ServiceEntry b) =>
+      a.title == b.title &&
+      a.description == b.description &&
+      a.workerName == b.workerName &&
+      a.workerRole == b.workerRole &&
+      a.category == b.category &&
+      a.date.isAtSameMomentAs(b.date) &&
+      a.resolved == b.resolved;
+
   Future<void> _onAdded(EntryAdded event, Emitter<JournalState> emit) async {
     final list = _sorted([...state.entries, event.entry]);
     await _storage.saveEntries(list);
     emit(state.copyWith(entries: list));
   }
 
-  Future<void> _onRemoved(EntryRemoved event, Emitter<JournalState> emit) async {
+  Future<void> _onRemoved(
+      EntryRemoved event, Emitter<JournalState> emit) async {
     final list = state.entries.where((e) => e.id != event.id).toList();
     await _storage.saveEntries(list);
     emit(state.copyWith(entries: list));
@@ -123,10 +133,13 @@ class JournalBloc extends Bloc<JournalEvent, JournalState> {
     try {
       await _api.uploadEntries(pending);
 
-      final ids = pending.map((e) => e.id).toSet();
-      final updated = state.entries
-          .map((e) => ids.contains(e.id) ? e.copyWith(synced: true) : e)
-          .toList();
+      final uploadedById = {for (final entry in pending) entry.id: entry};
+      final updated = state.entries.map((entry) {
+        final uploaded = uploadedById[entry.id];
+        return uploaded != null && _sameContent(entry, uploaded)
+            ? entry.copyWith(synced: true)
+            : entry;
+      }).toList();
       final now = DateTime.now();
       await _storage.saveEntries(updated);
       await _storage.saveLastSync(now);
@@ -143,8 +156,8 @@ class JournalBloc extends Bloc<JournalEvent, JournalState> {
       emit(state.copyWith(
           syncing: false, message: 'Сервер не отвечает. Проверьте интернет'));
     } catch (_) {
-      emit(state.copyWith(
-          syncing: false, message: 'Нет соединения с сервером'));
+      emit(
+          state.copyWith(syncing: false, message: 'Нет соединения с сервером'));
     }
   }
 }
