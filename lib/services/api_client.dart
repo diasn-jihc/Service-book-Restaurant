@@ -9,20 +9,32 @@ class ApiException implements Exception {
 }
 
 class ApiClient {
-  ApiClient({http.Client? client}) : _client = client ?? http.Client();
+  ApiClient({http.Client? client, Uri? syncEndpoint})
+      : _client = client ?? http.Client(),
+        _syncEndpoint = syncEndpoint;
 
   final http.Client _client;
+  final Uri? _syncEndpoint;
 
-  static const _syncUrl = 'https://jsonplaceholder.typicode.com/posts';
+  static const _configuredSyncUrl =
+      String.fromEnvironment('SERVICE_BOOK_SYNC_URL');
 
   static const _mealUrl = 'https://www.themealdb.com/api/json/v1/1/random.php';
 
   Future<void> uploadEntries(List<ServiceEntry> entries) async {
+    final endpoint = _syncEndpoint ??
+        (_configuredSyncUrl.isEmpty ? null : Uri.tryParse(_configuredSyncUrl));
+    if (endpoint == null || !endpoint.hasScheme || endpoint.host.isEmpty) {
+      throw ApiException(
+        'Синхронизация не настроена. Укажите SERVICE_BOOK_SYNC_URL для сервера приложения.',
+      );
+    }
     final response = await _client
         .post(
-          Uri.parse(_syncUrl),
+          endpoint,
           headers: {'Content-Type': 'application/json; charset=UTF-8'},
-          body: jsonEncode({'entries': entries.map((e) => e.toJson()).toList()}),
+          body:
+              jsonEncode({'entries': entries.map((e) => e.toJson()).toList()}),
         )
         .timeout(const Duration(seconds: 10));
 
