@@ -9,11 +9,13 @@ class WorkerForm extends StatefulWidget {
     required this.submitLabel,
     required this.onSubmit,
     this.onSubmitWithPassword,
+    this.initialWorker,
   });
 
   final String submitLabel;
   final void Function(Worker worker) onSubmit;
   final void Function(Worker worker, String password)? onSubmitWithPassword;
+  final Worker? initialWorker;
 
   @override
   State<WorkerForm> createState() => _WorkerFormState();
@@ -25,14 +27,16 @@ class _WorkerFormState extends State<WorkerForm> {
   late final TextEditingController _phoneCtrl;
   late final TextEditingController _passwordCtrl;
   bool _obscurePassword = true;
-  WorkerRole _role = WorkerRole.waiter;
+  late WorkerRole _role;
 
   @override
   void initState() {
     super.initState();
-    _nameCtrl = TextEditingController();
-    _phoneCtrl = TextEditingController();
+    final initial = widget.initialWorker;
+    _nameCtrl = TextEditingController(text: initial?.fullName ?? '');
+    _phoneCtrl = TextEditingController(text: initial?.phone ?? '');
     _passwordCtrl = TextEditingController();
+    _role = initial?.role ?? WorkerRole.waiter;
   }
 
   @override
@@ -43,8 +47,7 @@ class _WorkerFormState extends State<WorkerForm> {
     super.dispose();
   }
 
-  String _cleanPhone(String text) =>
-      text.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+  String _cleanPhone(String text) => text.replaceAll(RegExp(r'[\s\-\(\)]'), '');
 
   String? _validateName(String? value) {
     final text = (value ?? '').trim();
@@ -64,7 +67,8 @@ class _WorkerFormState extends State<WorkerForm> {
     if (!_formKey.currentState!.validate()) return;
 
     final worker = Worker(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      id: widget.initialWorker?.id ??
+          DateTime.now().microsecondsSinceEpoch.toString(),
       fullName: _nameCtrl.text.trim(),
       phone: _cleanPhone(_phoneCtrl.text),
       role: _role,
@@ -91,34 +95,39 @@ class _WorkerFormState extends State<WorkerForm> {
             validator: _validateName,
           ),
           if (widget.onSubmitWithPassword != null) ...[
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _phoneCtrl,
-            keyboardType: TextInputType.phone,
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'[0-9+\-\s\(\)]')),
-            ],
-            decoration: fieldDecoration(
-              'Номер телефона',
-              Icons.phone,
-              hint: '+7 701 123 45 67',
-            ),
-            validator: _validatePhone,
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _passwordCtrl,
-            obscureText: _obscurePassword,
-            decoration: fieldDecoration('Пароль (минимум 6 символов)', Icons.lock).copyWith(
-              suffixIcon: IconButton(
-                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _phoneCtrl,
+              keyboardType: TextInputType.phone,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9+\-\s\(\)]')),
+              ],
+              decoration: fieldDecoration(
+                'Номер телефона',
+                Icons.phone,
+                hint: '+7 701 123 45 67',
               ),
+              validator: _validatePhone,
             ),
-            validator: (value) => (value ?? '').length < 6
-                ? 'Пароль должен содержать минимум 6 символов'
-                : null,
-          ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _passwordCtrl,
+              obscureText: _obscurePassword,
+              decoration:
+                  fieldDecoration('Пароль (минимум 6 символов)', Icons.lock)
+                      .copyWith(
+                suffixIcon: IconButton(
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
+                  icon: Icon(_obscurePassword
+                      ? Icons.visibility
+                      : Icons.visibility_off),
+                ),
+              ),
+              validator: (value) => (value ?? '').length < 6
+                  ? 'Пароль должен содержать минимум 6 символов'
+                  : null,
+            ),
           ],
           const SizedBox(height: 20),
           Text('Роль', style: Theme.of(context).textTheme.titleSmall),
