@@ -23,6 +23,9 @@ class _WorkersScreenState extends State<WorkersScreen> {
     );
     if (updated != null && context.mounted) {
       context.read<WorkersBloc>().add(WorkerUpdated(updated));
+      if (updated.id == context.read<AuthBloc>().state.user?.id) {
+        context.read<AuthBloc>().add(UserProfileUpdated(updated, worker.phone));
+      }
     }
   }
 

@@ -15,6 +15,12 @@ class UserLoggedIn extends AuthEvent {
   UserLoggedIn(this.user);
 }
 
+class UserProfileUpdated extends AuthEvent {
+  final Worker user;
+  final String previousPhone;
+  UserProfileUpdated(this.user, this.previousPhone);
+}
+
 class UserLoggedOut extends AuthEvent {}
 
 class AuthState {
@@ -39,6 +45,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     });
 
     on<UserLoggedIn>((event, emit) async {
+      await _storage.saveUser(event.user);
+      emit(AuthState(event.user));
+    });
+
+    on<UserProfileUpdated>((event, emit) async {
+      if (state.user?.id != event.user.id) return;
+      await _storage.movePassword(event.previousPhone, event.user.phone);
       await _storage.saveUser(event.user);
       emit(AuthState(event.user));
     });

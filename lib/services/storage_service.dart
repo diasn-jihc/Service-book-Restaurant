@@ -60,6 +60,14 @@ class StorageService {
 
   bool hasPassword(String phone) => _prefs.containsKey(_passwordKey(phone));
 
+  Future<void> movePassword(String oldPhone, String newPhone) async {
+    if (oldPhone == newPhone) return;
+    final saved = _prefs.getString(_passwordKey(oldPhone));
+    if (saved == null) return;
+    await _prefs.setString(_passwordKey(newPhone), saved);
+    await _prefs.remove(_passwordKey(oldPhone));
+  }
+
   List<Worker> loadWorkers() => _readList('workers', Worker.fromJson) ?? [];
 
   Future<void> saveWorkers(List<Worker> workers) =>
