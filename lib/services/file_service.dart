@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/service_entry.dart';
@@ -8,7 +9,10 @@ import '../utils/formatters.dart';
 
 class FileService {
   Future<String?> saveReport(String text) async {
-    if (kIsWeb) return null;
+    if (kIsWeb) {
+      await Clipboard.setData(ClipboardData(text: text));
+      return 'clipboard';
+    }
 
     final dir = await getApplicationDocumentsDirectory();
     final stamp = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());

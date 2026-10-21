@@ -22,7 +22,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _tab = 0;
 
-  static const _titles = ['Сводка', 'Журнал обслуживания', 'Чек-листы', 'Рабочие'];
+  static const _titles = [
+    'Сводка',
+    'Журнал обслуживания',
+    'Чек-листы',
+    'Рабочие'
+  ];
 
   void _showColorDialog() {
     showDialog(
@@ -37,7 +42,8 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 for (var i = 0; i < accentOptions.length; i++)
                   GestureDetector(
-                    onTap: () => context.read<ThemeBloc>().add(AccentSelected(i)),
+                    onTap: () =>
+                        context.read<ThemeBloc>().add(AccentSelected(i)),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -78,9 +84,11 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
       showMessage(
         context,
-        path == null
-            ? 'В веб-версии сохранение файлов недоступно'
-            : 'Отчёт сохранён: $path',
+        path == 'clipboard'
+            ? 'Отчёт скопирован в буфер обмена'
+            : path == null
+                ? 'Не удалось сохранить отчёт'
+                : 'Отчёт сохранён: $path',
       );
     } catch (_) {
       if (!mounted) return;
