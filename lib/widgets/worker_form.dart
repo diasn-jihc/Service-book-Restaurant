@@ -27,6 +27,7 @@ class _WorkerFormState extends State<WorkerForm> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _phoneCtrl;
   late final TextEditingController _passwordCtrl;
+  late final TextEditingController _passwordConfirmCtrl;
   bool _obscurePassword = true;
   late WorkerRole _role;
 
@@ -37,6 +38,7 @@ class _WorkerFormState extends State<WorkerForm> {
     _nameCtrl = TextEditingController(text: initial?.fullName ?? '');
     _phoneCtrl = TextEditingController(text: initial?.phone ?? '');
     _passwordCtrl = TextEditingController();
+    _passwordConfirmCtrl = TextEditingController();
     _role = initial?.role ?? WorkerRole.waiter;
   }
 
@@ -45,6 +47,7 @@ class _WorkerFormState extends State<WorkerForm> {
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
     _passwordCtrl.dispose();
+    _passwordConfirmCtrl.dispose();
     super.dispose();
   }
 
@@ -125,6 +128,15 @@ class _WorkerFormState extends State<WorkerForm> {
               validator: (value) => (value ?? '').length < 6
                   ? 'Пароль должен содержать минимум 6 символов'
                   : null,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _passwordConfirmCtrl,
+              obscureText: _obscurePassword,
+              decoration:
+                  fieldDecoration('Повторите пароль', Icons.lock_outline),
+              validator: (value) =>
+                  value != _passwordCtrl.text ? 'Пароли не совпадают' : null,
             ),
           ],
           const SizedBox(height: 20),
