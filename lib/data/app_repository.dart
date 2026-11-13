@@ -469,6 +469,17 @@ class AppRepository {
     }
     if (guests < 1) return 'Укажите количество гостей';
     if (guests > table.seats) return 'За этим столом только ${table.seats} мест';
+    final startMinutes = start.hour * 60 + start.minute;
+    final startsAfterMidnight = restaurant.closeMinutes <= restaurant.openMinutes &&
+        startMinutes < restaurant.closeMinutes;
+    final serviceDay = DateTime(
+      start.year,
+      start.month,
+      start.day - (startsAfterMidnight ? 1 : 0),
+    );
+    final isAvailableSlot = slotsFor(restaurant, serviceDay)
+        .any((slot) => slot.isAtSameMomentAs(start));
+    if (!isAvailableSlot) return 'Выберите доступное время ресторана';
     if (start.isBefore(DateTime.now())) return 'Выберите время в будущем';
     if (!isTableFree(tableId, start)) {
       return 'Этот стол уже занят на выбранное время. Выберите другой';
