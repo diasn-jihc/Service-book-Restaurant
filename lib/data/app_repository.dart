@@ -523,6 +523,9 @@ class AppRepository {
   Future<String?> seatReservation(String id) async {
     final r = reservationById(id);
     if (r == null) return 'Бронь не найдена';
+    if (r.status != ReservationStatus.confirmed) {
+      return 'Сначала подтвердите бронь';
+    }
     final table = tableById(r.tableId);
     if (table == null) return 'Стол не найден';
     if (table.occupied) return 'Стол ещё занят. Сначала освободите его';
