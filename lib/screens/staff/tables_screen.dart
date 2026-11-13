@@ -343,7 +343,9 @@ class _TableSheet extends StatelessWidget {
                             ],
                           ),
                         ),
-                        if (role.canServe && !table.occupied)
+                        if (role.canServe &&
+                            !table.occupied &&
+                            r.status == ReservationStatus.confirmed)
                           TextButton(
                             onPressed: () => _arrived(context, r),
                             child: const Text('Пришли'),
