@@ -493,7 +493,7 @@ class AppRepository {
 
   Future<void> confirmReservation(String id) async {
     final r = reservationById(id);
-    if (r == null) return;
+    if (r == null || r.status != ReservationStatus.pending) return;
     _replace(reservations, (Reservation x) => x.id == id,
         r.copyWith(status: ReservationStatus.confirmed));
     await saveReservations();
