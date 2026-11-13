@@ -1,22 +1,45 @@
-# Сервисная книжка для ресторана
+# Столик — бронирование столов и кабинет ресторана
 
-## Как поставить в свой проект `service_book`
-1. Удалите старую папку `lib` (там старый `providers/`) и скопируйте новую `lib` из архива.
-2. Замените `pubspec.yaml` на файл из архива (или добавьте зависимости: flutter_bloc, shared_preferences, http, path_provider, intl, flutter_localizations).
-3. Удалите `test/widget_test.dart` (он от старого шаблона и не компилируется).
-4. Выполните:
-```
-flutter pub get
-flutter run
-```
+Flutter-приложение (Material 3, тёмная тема, 5 цветов на выбор).
+Гость выбирает город, находит ресторан, бронирует стол или кабинку и заранее заказывает блюда.
+Ресторан регистрируется сам и получает свой кабинет: столы, брони, заказы, меню, сотрудники.
 
-## Какие темы курса использованы
-- Раздел 2: StatefulWidget, setState, обновление интерфейса (`journal_screen`, `worker_form`).
-- Раздел 3: ListView, Row, Column, прокрутка (все экраны).
-- Раздел 4: классы, enum, `late`, null safety (`models/`, `late final` в формах).
-- Раздел 5: переходы между экранами, передача данных и возврат результата (`utils/actions.dart`, `add_entry_screen`).
-- Разделы 6-7: счётчик (`GuestsCubit` — «Гостей в зале»).
-- Раздел 8: HTTP, JSON, модели (`api_client.dart`, `models/meal.dart`).
-- Раздел 10: SharedPreferences, форма, список (`storage_service.dart`), запись текстового файла (`file_service.dart`).
-- Раздел 11: даты и локализация (`utils/formatters.dart`, ru).
-- Раздел 12: BLoC и события, смена цвета интерфейса (`blocs/`, `theme_bloc.dart`).
+## Запуск
+1. Скопируйте папку `lib` и файл `pubspec.yaml` в Flutter-проект (или создайте проект `flutter create service_book` и замените их).
+2. `flutter pub get`
+3. `flutter run`
+4. iOS: добавьте в `ios/Runner/Info.plist` ключ `NSPhotoLibraryUsageDescription` (для выбора фото).
+
+## Демо-аккаунты (пароль у всех `demo123`)
+| Кто | Телефон |
+|---|---|
+| Гость | +77000000000 |
+| Второй гость | +77000000020 |
+| Админы ресторанов | +77000000001 … +77000000008 |
+| Официант | +77000000011 |
+| Повар | +77000000012 |
+| Шеф-повар | +77000000013 |
+
+Отключить демо-данные: `kSeedDemoData = false` в `lib/constants.dart`.
+Название приложения: `appName` в том же файле.
+
+## Как это устроено
+- **Гость**: город → рестораны (поиск, кухня) → стол/кабинка на свободное время → предзаказ → «Мои брони», отзывы.
+- **Ресторан**: регистрация создаёт администратора, заведение, столы. Роли: админ, шеф, официант, повар, бармен — у каждой свои права
+  (персонал, столы и профиль — только админ; меню — админ и шеф; кухня меняет «готовится/готово», зал — «подан/оплачен»).
+- **Столы**: свободен / бронь / занят, зоны: зал, кабинка, терраса. Занятость считается по броням (120 минут).
+- Предзаказ попадает на кухню только после подтверждения брони.
+
+## Темы курса → файлы
+- Виджеты, формы: `screens/auth/*`, `widgets/*`
+- ListView, карточки: `screens/guest/restaurants_screen.dart`, `screens/staff/orders_screen.dart`
+- Классы Dart, null safety: `models/*`
+- Навигация и передача данных: `screens/guest/restaurant_detail_screen.dart`, `screens/staff/*`
+- HTTP/JSON: `services/api_client.dart` («Идея дня» с themealdb)
+- SharedPreferences и файлы: `services/storage_service.dart`, `services/report_service.dart`, `services/photo_service.dart`
+- intl / локализация: `utils/formatters.dart`, `main.dart` (ru)
+- BLoC: `blocs/*` (AuthBloc, ThemeBloc, CityCubit, DataCubit)
+
+## Ограничения
+Данные хранятся на одном устройстве (SharedPreferences). Чтобы брони и кухня работали между устройствами,
+нужен сервер — например Firebase; логика собрана в `data/app_repository.dart`, его можно заменить.

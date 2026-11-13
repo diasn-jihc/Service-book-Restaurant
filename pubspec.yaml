@@ -1,10 +1,10 @@
 name: service_book
-description: Сервисная книжка для ресторана — журнал, чек-листы, рабочие.
+description: Столик — брон столов в ресторанах и кабинет для ресторанов.
 publish_to: 'none'
-version: 1.0.0+1
+version: 2.0.0+1
 
 environment:
-  sdk: '>=3.3.0 <4.0.0'
+  sdk: '>=3.4.0 <4.0.0'
 
 dependencies:
   flutter:
@@ -14,14 +14,15 @@ dependencies:
   flutter_bloc: ^8.1.6
   shared_preferences: ^2.2.3
   http: ^1.2.1
-  crypto: ^3.0.7
   path_provider: ^2.1.3
+  image_picker: ^1.1.2
+  crypto: ^3.0.3
   intl: any
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.3
+  flutter_lints: ^4.0.0
 
 flutter:
   uses-material-design: true

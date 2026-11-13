@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/service_entry.dart';
+import '../models/user.dart';
 import '../models/worker.dart';
 import '../utils/formatters.dart';
 

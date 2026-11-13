@@ -1,3 +1,4 @@
+/// «Идея дня» — блюдо, которое приходит с сервера в формате JSON.
 class Meal {
   final String name;
   final String category;

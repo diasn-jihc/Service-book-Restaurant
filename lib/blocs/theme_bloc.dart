@@ -1,5 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../services/storage_service.dart';
+import '../theme/app_theme.dart';
 
 abstract class ThemeEvent {}
 
@@ -9,19 +11,23 @@ class AccentSelected extends ThemeEvent {
 }
 
 class ThemeState {
-  final int accentIndex;
+  final int accentIndex; // номер цвета в accentOptions
   const ThemeState(this.accentIndex);
 }
 
+/// Меняет цвет интерфейса и запоминает выбор.
 class ThemeBloc extends Bloc<ThemeEvent, ThemeState> {
-  ThemeBloc(StorageService storage)
-      : _storage = storage,
-        super(ThemeState(storage.loadAccentIndex())) {
+  ThemeBloc(this._store) : super(ThemeState(_load(_store))) {
     on<AccentSelected>((event, emit) async {
-      await _storage.saveAccentIndex(event.index);
+      await _store.writeInt('accent', event.index);
       emit(ThemeState(event.index));
     });
   }
 
-  final StorageService _storage;
+  final StorageService _store;
+
+  static int _load(StorageService store) {
+    final saved = store.readInt('accent') ?? 0;
+    return saved >= 0 && saved < accentOptions.length ? saved : 0;
+  }
 }

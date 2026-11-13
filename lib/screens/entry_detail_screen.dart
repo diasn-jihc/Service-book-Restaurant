@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/journal_bloc.dart';
 import '../models/service_entry.dart';
-import '../models/worker.dart';
+import '../models/user.dart';
 import '../utils/actions.dart';
 import '../utils/formatters.dart';
 

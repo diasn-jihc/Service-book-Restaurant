@@ -19,7 +19,7 @@ class RegistrationScreen extends StatelessWidget {
       );
       return;
     }
-    context.read<AuthBloc>().add(UserRegistered(existing.isEmpty ? worker : existing.first, password));
+    context.read<AuthBloc>().add(LoginRequested(worker.phone, password));
   }
 
   @override

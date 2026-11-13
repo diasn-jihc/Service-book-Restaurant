@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import '../models/checklist_item.dart';
 import '../models/service_entry.dart';
-import '../models/worker.dart';
+import '../models/user.dart';
 import '../services/api_client.dart';
 import '../services/storage_service.dart';
 
@@ -83,16 +83,18 @@ class AppState extends ChangeNotifier {
   Future<void> _persistEntries() => _storage.saveEntries(_entries);
 
   Future<void> addEntry({
+    String restaurantId = '',
     required String title,
     required String description,
     required String responsible,
-    required WorkerRole responsibleRole,
+    required UserRole responsibleRole,
     required EntryCategory category,
     required DateTime date,
     required bool resolved,
   }) async {
     _entries.add(ServiceEntry(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
+      restaurantId: restaurantId,
       title: title,
       description: description,
       workerName: responsible,

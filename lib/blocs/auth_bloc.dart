@@ -1,67 +1,58 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../models/worker.dart';
-import '../services/storage_service.dart';
 
+import '../data/app_repository.dart';
+import '../models/user.dart';
+
+// ---- события ----
 abstract class AuthEvent {}
 
-class UserRegistered extends AuthEvent {
-  final Worker user;
+class LoginRequested extends AuthEvent {
+  final String phone;
   final String password;
-  UserRegistered(this.user, this.password);
+  LoginRequested(this.phone, this.password);
 }
 
-class UserLoggedIn extends AuthEvent {
-  final Worker user;
-  UserLoggedIn(this.user);
+/// После успешной регистрации.
+class SessionStarted extends AuthEvent {
+  final AppUser user;
+  SessionStarted(this.user);
 }
 
-class UserProfileUpdated extends AuthEvent {
-  final Worker user;
-  final String previousPhone;
-  UserProfileUpdated(this.user, this.previousPhone);
-}
+class LoggedOut extends AuthEvent {}
 
-class UserLoggedOut extends AuthEvent {}
-
+// ---- состояние ----
 class AuthState {
-  final Worker? user;
-  const AuthState(this.user);
+  final AppUser? user; // null — никто не вошёл
+  final String? error; // ошибка входа
+  const AuthState({this.user, this.error});
 
   bool get isLoggedIn => user != null;
 }
 
+// ---- блок ----
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  AuthBloc(StorageService storage)
-      : _storage = storage,
-        super(AuthState(storage.loadUser())) {
-    on<UserRegistered>((event, emit) async {
-      await _storage.savePassword(event.user.phone, event.password);
-      await _storage.saveWorkers([
-        ..._storage
-            .loadWorkers()
-            .where((worker) => worker.phone != event.user.phone),
-        event.user,
-      ]);
-      await _storage.saveUser(event.user);
-      emit(AuthState(event.user));
+  AuthBloc(this._repo) : super(AuthState(user: _repo.restoreSession())) {
+    on<LoginRequested>((event, emit) async {
+      final result = _repo.login(event.phone, event.password);
+      final user = result.user;
+      if (user == null) {
+        emit(AuthState(error: result.error));
+        return;
+      }
+      await _repo.saveSession(user.id);
+      emit(AuthState(user: user));
     });
 
-    on<UserLoggedIn>((event, emit) async {
-      await _storage.saveUser(event.user);
-      emit(AuthState(event.user));
+    on<SessionStarted>((event, emit) async {
+      await _repo.saveSession(event.user.id);
+      emit(AuthState(user: event.user));
     });
 
-    on<UserProfileUpdated>((event, emit) async {
-      if (state.user?.id != event.user.id) return;
-      await _storage.saveUser(event.user);
-      emit(AuthState(event.user));
-    });
-
-    on<UserLoggedOut>((event, emit) async {
-      await _storage.clearUser();
-      emit(const AuthState(null));
+    on<LoggedOut>((event, emit) async {
+      await _repo.clearSession();
+      emit(const AuthState());
     });
   }
 
-  final StorageService _storage;
+  final AppRepository _repo;
 }

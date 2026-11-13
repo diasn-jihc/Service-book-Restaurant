@@ -104,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
       yesLabel: 'Выйти',
     );
     if (ok && mounted) {
-      context.read<AuthBloc>().add(UserLoggedOut());
+      context.read<AuthBloc>().add(LoggedOut());
     }
   }
 
@@ -182,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         floatingActionButton: _buildFab(),
         bottomNavigationBar: NavigationBar(
-          backgroundColor: cardColor,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           selectedIndex: _tab,
           onDestinationSelected: (i) => setState(() => _tab = i),
           destinations: const [

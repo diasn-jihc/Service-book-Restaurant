@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/auth_bloc.dart';
-import '../blocs/workers_bloc.dart';
-import '../services/storage_service.dart';
-import '../utils/actions.dart';
 import '../utils/phone_utils.dart';
 import '../widgets/field_decoration.dart';
 import 'registration_screen.dart';
@@ -31,24 +28,12 @@ class _LoginScreenState extends State<LoginScreen> {
   void _login() {
     if (!_formKey.currentState!.validate()) return;
     final phone = normalizePhone(_phone.text);
-    final storage = context.read<StorageService>();
-    final matches = context
-        .read<WorkersBloc>()
-        .state
-        .workers
-        .where((item) => item.phone == phone);
-    final worker = matches.isEmpty ? null : matches.first;
-    if (worker == null || !storage.verifyPassword(phone, _password.text)) {
-      showMessage(context, 'Неверный номер телефона или пароль');
-      return;
-    }
-    storage.upgradePasswordHash(phone, _password.text);
-    context.read<AuthBloc>().add(UserLoggedIn(worker));
+    context.read<AuthBloc>().add(LoginRequested(phone, _password.text));
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Вход')),
+        appBar: AppBar(title: const Text('Р’С…РѕРґ')),
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -62,7 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       const Icon(Icons.restaurant, size: 64),
                       const SizedBox(height: 16),
-                      Text('Войдите в аккаунт',
+                      Text('Р’РѕР№РґРёС‚Рµ РІ Р°РєРєР°СѓРЅС‚',
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.headlineSmall),
                       const SizedBox(height: 24),
@@ -70,12 +55,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         controller: _phone,
                         keyboardType: TextInputType.phone,
                         decoration: fieldDecoration(
-                            'Номер телефона', Icons.phone,
+                            'РќРѕРјРµСЂ С‚РµР»РµС„РѕРЅР°', Icons.phone,
                             hint: '+77011234567'),
                         validator: (value) {
                           return isValidPhone(value ?? '')
                               ? null
-                              : 'Введите корректный номер телефона';
+                              : 'Р’РІРµРґРёС‚Рµ РєРѕСЂСЂРµРєС‚РЅС‹Р№ РЅРѕРјРµСЂ С‚РµР»РµС„РѕРЅР°';
                         },
                       ),
                       const SizedBox(height: 16),
@@ -83,7 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         controller: _password,
                         obscureText: _obscure,
                         decoration:
-                            fieldDecoration('Пароль', Icons.lock).copyWith(
+                            fieldDecoration('РџР°СЂРѕР»СЊ', Icons.lock).copyWith(
                           suffixIcon: IconButton(
                               onPressed: () =>
                                   setState(() => _obscure = !_obscure),
@@ -92,16 +77,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                   : Icons.visibility_off)),
                         ),
                         validator: (value) =>
-                            (value ?? '').isEmpty ? 'Введите пароль' : null,
+                            (value ?? '').isEmpty ? 'Р’РІРµРґРёС‚Рµ РїР°СЂРѕР»СЊ' : null,
                       ),
                       const SizedBox(height: 24),
                       FilledButton(
-                          onPressed: _login, child: const Text('Войти')),
+                          onPressed: _login, child: const Text('Р’РѕР№С‚Рё')),
                       TextButton(
                         onPressed: () => Navigator.of(context).pushReplacement(
                             MaterialPageRoute<void>(
                                 builder: (_) => const RegistrationScreen())),
-                        child: const Text('Нет аккаунта? Зарегистрироваться'),
+                        child: const Text('РќРµС‚ Р°РєРєР°СѓРЅС‚Р°? Р—Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊСЃСЏ'),
                       ),
                     ],
                   ),

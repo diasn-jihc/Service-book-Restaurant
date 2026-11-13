@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
-import 'worker.dart';
+import 'package:flutter/material.dart';
+
+import 'user.dart';
 
 enum EntryCategory { cleaning, equipment, sanitary, supplies, other }
 
@@ -35,12 +36,14 @@ extension EntryCategoryInfo on EntryCategory {
   }
 }
 
+/// Запись в журнале обслуживания ресторана.
 class ServiceEntry {
   final String id;
+  final String restaurantId;
   final String title;
   final String description;
   final String workerName;
-  final WorkerRole workerRole;
+  final UserRole workerRole;
   final EntryCategory category;
   final DateTime date;
   final bool resolved;
@@ -48,6 +51,7 @@ class ServiceEntry {
 
   const ServiceEntry({
     required this.id,
+    this.restaurantId = '',
     required this.title,
     required this.description,
     required this.workerName,
@@ -61,6 +65,7 @@ class ServiceEntry {
   ServiceEntry copyWith({bool? resolved, bool? synced}) {
     return ServiceEntry(
       id: id,
+      restaurantId: restaurantId,
       title: title,
       description: description,
       workerName: workerName,
@@ -74,6 +79,7 @@ class ServiceEntry {
 
   Map<String, dynamic> toJson() => {
         'id': id,
+        'restaurantId': restaurantId,
         'title': title,
         'description': description,
         'workerName': workerName,
@@ -87,12 +93,13 @@ class ServiceEntry {
   factory ServiceEntry.fromJson(Map<String, dynamic> json) {
     return ServiceEntry(
       id: json['id'] as String,
+      restaurantId: (json['restaurantId'] as String?) ?? '',
       title: json['title'] as String,
       description: (json['description'] as String?) ?? '',
       workerName: (json['workerName'] as String?) ?? '',
-      workerRole: WorkerRole.values.firstWhere(
+      workerRole: UserRole.values.firstWhere(
         (r) => r.name == json['workerRole'],
-        orElse: () => WorkerRole.waiter,
+        orElse: () => UserRole.waiter,
       ),
       category: EntryCategory.values.firstWhere(
         (c) => c.name == json['category'],

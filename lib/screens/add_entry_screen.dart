@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/auth_bloc.dart';
 import '../blocs/workers_bloc.dart';
 import '../models/service_entry.dart';
+import '../models/user.dart';
 import '../models/worker.dart';
 import '../utils/formatters.dart';
 import '../widgets/field_decoration.dart';
@@ -29,7 +30,13 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     super.initState();
     _titleCtrl = TextEditingController();
     _descCtrl = TextEditingController();
-    _responsible = context.read<AuthBloc>().state.user!;
+    final user = context.read<AuthBloc>().state.user!;
+    _responsible = Worker(
+      id: user.id,
+      fullName: user.name,
+      phone: user.phone,
+      role: _workerRole(user.role),
+    );
   }
 
   @override
@@ -73,7 +80,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
       title: _titleCtrl.text.trim(),
       description: _descCtrl.text.trim(),
       workerName: _responsible.fullName,
-      workerRole: _responsible.role,
+      workerRole: _userRole(_responsible.role),
       category: _category,
       date: _date,
       resolved: !_needsAttention,
@@ -173,3 +180,19 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     );
   }
 }
+
+WorkerRole _workerRole(UserRole role) => switch (role) {
+      UserRole.chef => WorkerRole.chef,
+      UserRole.cook => WorkerRole.cook,
+      UserRole.bartender => WorkerRole.bartender,
+      UserRole.admin => WorkerRole.administrator,
+      UserRole.guest || UserRole.waiter => WorkerRole.waiter,
+    };
+
+UserRole _userRole(WorkerRole role) => switch (role) {
+      WorkerRole.chef => UserRole.chef,
+      WorkerRole.cook => UserRole.cook,
+      WorkerRole.bartender => UserRole.bartender,
+      WorkerRole.administrator => UserRole.admin,
+      WorkerRole.waiter || WorkerRole.cleaner => UserRole.waiter,
+    };

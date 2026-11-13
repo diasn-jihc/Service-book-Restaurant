@@ -7,7 +7,7 @@ import '../blocs/journal_bloc.dart';
 import '../blocs/workers_bloc.dart';
 import '../models/checklist_item.dart';
 import '../models/meal.dart';
-import '../models/worker.dart';
+import '../models/user.dart';
 import '../services/api_client.dart';
 import '../utils/actions.dart';
 import '../utils/formatters.dart';
@@ -134,7 +134,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 icon: Icons.warning_amber_rounded,
                 value: '${journal.unresolvedCount}',
                 label: 'Требуют внимания',
-                warning: journal.unresolvedCount > 0,
+                color: journal.unresolvedCount > 0
+                    ? Theme.of(context).colorScheme.error
+                    : null,
               ),
             ),
             const SizedBox(width: 8),
