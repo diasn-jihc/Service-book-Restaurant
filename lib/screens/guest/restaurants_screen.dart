@@ -29,6 +29,7 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
   String _query = '';
   String? _cuisine;
   bool _favoritesOnly = false;
+  bool _openNowOnly = false;
   late final Future<Meal> _mealFuture;
 
   @override
@@ -73,7 +74,8 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
           r.description.toLowerCase().contains(query);
       final matchesCuisine = _cuisine == null || r.cuisine == _cuisine;
       final matchesFavorite = !_favoritesOnly || favoriteIds.contains(r.id);
-      return matchesQuery && matchesCuisine && matchesFavorite;
+      final matchesOpen = !_openNowOnly || repo.isOpenNow(r);
+      return matchesQuery && matchesCuisine && matchesFavorite && matchesOpen;
     }).toList();
 
     return SafeArea(
@@ -141,6 +143,16 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
               selected: _favoritesOnly,
               onSelected: (selected) =>
                   setState(() => _favoritesOnly = selected),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilterChip(
+              avatar: const Icon(Icons.schedule, size: 18),
+              label: const Text('Открыто сейчас'),
+              selected: _openNowOnly,
+              onSelected: (selected) =>
+                  setState(() => _openNowOnly = selected),
             ),
           ),
           if (cuisinesHere.length > 1) ...[
