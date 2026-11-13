@@ -117,9 +117,16 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
           const SizedBox(height: 14),
           TextField(
             onChanged: (v) => setState(() => _query = v),
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               hintText: 'Название, кухня или адрес',
               prefixIcon: Icon(Icons.search),
+              suffixIcon: _query.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: 'Очистить поиск',
+                      onPressed: () => setState(() => _query = ''),
+                      icon: const Icon(Icons.close),
+                    ),
             ),
           ),
           const SizedBox(height: 10),
