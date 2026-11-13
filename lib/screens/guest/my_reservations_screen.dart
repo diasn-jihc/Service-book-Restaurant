@@ -163,8 +163,9 @@ class _ReservationCard extends StatelessWidget {
     final restaurant = repo.restaurantById(r.restaurantId);
     final table = repo.tableById(r.tableId);
     final order = repo.orderOfReservation(r.id);
-    final canCancel = r.status == ReservationStatus.pending ||
-        r.status == ReservationStatus.confirmed;
+    final canCancel = r.start.isAfter(DateTime.now()) &&
+        (r.status == ReservationStatus.pending ||
+            r.status == ReservationStatus.confirmed);
     final canReview =
         r.status == ReservationStatus.completed && !repo.hasReview(r.id);
 
