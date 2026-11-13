@@ -464,6 +464,10 @@ class AppRepository {
   }) async {
     final table = tableById(tableId);
     if (table == null) return 'Стол не найден';
+    if (table.restaurantId != restaurant.id) {
+      return 'Выберите стол этого ресторана';
+    }
+    if (guests < 1) return 'Укажите количество гостей';
     if (guests > table.seats) return 'За этим столом только ${table.seats} мест';
     if (start.isBefore(DateTime.now())) return 'Выберите время в будущем';
     if (!isTableFree(tableId, start)) {
