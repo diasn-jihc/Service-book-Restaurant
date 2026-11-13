@@ -354,8 +354,18 @@ class AppRepository {
     required int seats,
     required TableZone zone,
   }) async {
+    if (number < 1) return 'Номер стола должен быть больше нуля';
+    if (seats < 1) return 'У стола должно быть хотя бы одно место';
     final table = tableById(tableId);
     if (table == null) return 'Стол не найден';
+    if (table.occupied && seats < table.guests) {
+      return 'Нельзя уменьшить вместимость ниже числа гостей за столом';
+    }
+    final exceedsCapacity = reservations.any((r) =>
+        r.tableId == tableId && r.status.isActive && r.guests > seats);
+    if (exceedsCapacity) {
+      return 'Нельзя уменьшить вместимость ниже числа гостей в активной брони';
+    }
     final clash = tablesOf(table.restaurantId)
         .any((t) => t.number == number && t.id != tableId);
     if (clash) return 'Стол с номером $number уже есть';
