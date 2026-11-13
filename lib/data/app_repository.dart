@@ -379,7 +379,9 @@ class AppRepository {
   Future<String?> seatTable(String tableId, int guests) async {
     final table = tableById(tableId);
     if (table == null) return 'Стол не найден';
+    if (guests < 1) return 'Укажите количество гостей';
     if (guests > table.seats) return 'За этим столом только ${table.seats} мест';
+    if (table.occupied) return 'Этот стол уже занят';
     _replace(tables, (DiningTable t) => t.id == tableId, table.seated(guests));
     await saveTables();
     return null;
