@@ -28,6 +28,7 @@ class RestaurantsScreen extends StatefulWidget {
 class _RestaurantsScreenState extends State<RestaurantsScreen> {
   String _query = '';
   String? _cuisine;
+  bool _favoritesOnly = false;
   late final Future<Meal> _mealFuture;
 
   @override
@@ -56,10 +57,12 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
   Widget build(BuildContext context) {
     final city = context.watch<CityCubit>().state;
     final repo = context.repo;
-    final user = context.read<AuthBloc>().state.user;
+    final authUser = context.read<AuthBloc>().state.user;
+    final user = authUser == null ? null : repo.userById(authUser.id);
     final firstName = (user?.name ?? '').split(' ').first;
 
     final inCity = repo.restaurantsIn(city);
+    final favoriteIds = user?.favoriteRestaurantIds ?? const <String>[];
     final cuisinesHere = inCity.map((r) => r.cuisine).toSet().toList();
     final query = _query.trim().toLowerCase();
     final shown = inCity.where((r) {
@@ -68,7 +71,8 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
           r.cuisine.toLowerCase().contains(query) ||
           r.address.toLowerCase().contains(query);
       final matchesCuisine = _cuisine == null || r.cuisine == _cuisine;
-      return matchesQuery && matchesCuisine;
+      final matchesFavorite = !_favoritesOnly || favoriteIds.contains(r.id);
+      return matchesQuery && matchesCuisine && matchesFavorite;
     }).toList();
 
     return SafeArea(
@@ -117,6 +121,20 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
               prefixIcon: Icon(Icons.search),
             ),
           ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilterChip(
+              avatar: Icon(
+                _favoritesOnly ? Icons.favorite : Icons.favorite_border,
+                size: 18,
+              ),
+              label: Text('Избранное (${favoriteIds.length})'),
+              selected: _favoritesOnly,
+              onSelected: (selected) =>
+                  setState(() => _favoritesOnly = selected),
+            ),
+          ),
           if (cuisinesHere.length > 1) ...[
             const SizedBox(height: 12),
             SizedBox(
@@ -159,6 +177,13 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
               _RestaurantCard(
                 restaurant: r,
                 repo: repo,
+                isFavorite: favoriteIds.contains(r.id),
+                onFavoriteTap: user == null
+                    ? null
+                    : () => context.data.run(
+                          (repository) =>
+                              repository.toggleFavorite(user.id, r.id),
+                        ),
                 onTap: () => _open(r),
               ),
               const SizedBox(height: 14),
@@ -173,11 +198,15 @@ class _RestaurantCard extends StatelessWidget {
   const _RestaurantCard({
     required this.restaurant,
     required this.repo,
+    required this.isFavorite,
+    required this.onFavoriteTap,
     required this.onTap,
   });
 
   final Restaurant restaurant;
   final AppRepository repo;
+  final bool isFavorite;
+  final VoidCallback? onFavoriteTap;
   final VoidCallback onTap;
 
   Widget _badge(String text, Color color, IconData icon) {
@@ -233,6 +262,22 @@ class _RestaurantCard extends StatelessWidget {
                   'Свободно: $freeTables из $totalTables',
                   freeTables > 0 ? freeColor : busyColor,
                   Icons.table_restaurant,
+                ),
+              ),
+              Positioned(
+                right: 8,
+                bottom: 8,
+                child: IconButton.filledTonal(
+                  tooltip: isFavorite ? 'Убрать из избранного' : 'В избранное',
+                  onPressed: onFavoriteTap,
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black.withAlpha(160),
+                    foregroundColor:
+                        isFavorite ? Colors.pinkAccent : Colors.white,
+                  ),
+                  icon: Icon(
+                    isFavorite ? Icons.favorite : Icons.favorite_border,
+                  ),
                 ),
               ),
             ],

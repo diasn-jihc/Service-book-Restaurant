@@ -109,6 +109,23 @@ class AppRepository {
     return null;
   }
 
+  bool isFavorite(String userId, String restaurantId) =>
+      userById(userId)?.favoriteRestaurantIds.contains(restaurantId) ?? false;
+
+  Future<void> toggleFavorite(String userId, String restaurantId) async {
+    final user = userById(userId);
+    if (user == null || restaurantById(restaurantId) == null) return;
+
+    final favorites = [...user.favoriteRestaurantIds];
+    if (!favorites.remove(restaurantId)) favorites.add(restaurantId);
+    _replace(
+      users,
+      (AppUser item) => item.id == userId,
+      user.copyWith(favoriteRestaurantIds: favorites),
+    );
+    await saveUsers();
+  }
+
   AppUser? userByPhone(String phone) {
     final p = normalizePhone(phone);
     for (final u in users) {

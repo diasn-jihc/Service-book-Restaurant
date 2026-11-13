@@ -75,6 +75,7 @@ class AppUser {
   final String? restaurantId; // у гостя null
   final String salt;
   final String passwordHash;
+  final List<String> favoriteRestaurantIds;
 
   String get fullName => name;
 
@@ -86,7 +87,20 @@ class AppUser {
     required this.restaurantId,
     required this.salt,
     required this.passwordHash,
+    this.favoriteRestaurantIds = const [],
   });
+
+  AppUser copyWith({List<String>? favoriteRestaurantIds}) => AppUser(
+        id: id,
+        name: name,
+        phone: phone,
+        role: role,
+        restaurantId: restaurantId,
+        salt: salt,
+        passwordHash: passwordHash,
+        favoriteRestaurantIds:
+            favoriteRestaurantIds ?? this.favoriteRestaurantIds,
+      );
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -96,6 +110,7 @@ class AppUser {
         'restaurantId': restaurantId,
         'salt': salt,
         'passwordHash': passwordHash,
+        'favoriteRestaurantIds': favoriteRestaurantIds,
       };
 
   factory AppUser.fromJson(Map<String, dynamic> json) {
@@ -110,6 +125,10 @@ class AppUser {
       restaurantId: json['restaurantId'] as String?,
       salt: json['salt'] as String,
       passwordHash: json['passwordHash'] as String,
+      favoriteRestaurantIds:
+          ((json['favoriteRestaurantIds'] as List<dynamic>?) ?? const [])
+              .whereType<String>()
+              .toList(),
     );
   }
 }
