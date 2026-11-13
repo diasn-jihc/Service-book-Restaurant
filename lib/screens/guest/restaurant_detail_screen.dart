@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../blocs/auth_bloc.dart';
 import '../../blocs/data_cubit.dart';
 import '../../data/app_repository.dart';
 import '../../models/dining_table.dart';
@@ -41,6 +43,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final repo = context.repo;
+    final user = context.read<AuthBloc>().state.user;
     final r = repo.restaurantById(widget.restaurantId);
     if (r == null) {
       return Scaffold(
@@ -53,6 +56,8 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     }
 
     final open = repo.isOpenNow(r);
+    final isFavorite =
+        user != null && repo.isFavorite(user.id, r.id);
     final rating = repo.ratingOf(r.id);
     final reviews = repo.reviewsOf(r.id);
     final photoCount = r.photos.isEmpty ? 1 : r.photos.length;
@@ -74,6 +79,19 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
             pinned: true,
             expandedHeight: 270,
             backgroundColor: bgColor,
+          actions: [
+            if (user != null)
+              IconButton(
+                tooltip: isFavorite ? 'Убрать из избранного' : 'В избранное',
+                onPressed: () => context.data.run(
+                  (repository) => repository.toggleFavorite(user.id, r.id),
+                ),
+                icon: Icon(
+                  isFavorite ? Icons.favorite : Icons.favorite_border,
+                  color: isFavorite ? Colors.pinkAccent : null,
+                ),
+              ),
+          ],
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
                 r.name,
