@@ -332,6 +332,8 @@ class AppRepository {
     required int seats,
     required TableZone zone,
   }) async {
+    if (number < 1) return 'Номер стола должен быть больше нуля';
+    if (seats < 1) return 'У стола должно быть хотя бы одно место';
     final exists =
         tablesOf(restaurantId).any((t) => t.number == number);
     if (exists) return 'Стол с номером $number уже есть';
