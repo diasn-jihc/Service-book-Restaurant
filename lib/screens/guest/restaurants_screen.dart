@@ -69,7 +69,8 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
       final matchesQuery = query.isEmpty ||
           r.name.toLowerCase().contains(query) ||
           r.cuisine.toLowerCase().contains(query) ||
-          r.address.toLowerCase().contains(query);
+          r.address.toLowerCase().contains(query) ||
+          r.description.toLowerCase().contains(query);
       final matchesCuisine = _cuisine == null || r.cuisine == _cuisine;
       final matchesFavorite = !_favoritesOnly || favoriteIds.contains(r.id);
       return matchesQuery && matchesCuisine && matchesFavorite;
