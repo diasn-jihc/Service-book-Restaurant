@@ -528,6 +528,7 @@ class AppRepository {
     }
     final table = tableById(r.tableId);
     if (table == null) return 'Стол не найден';
+    if (table.seats < r.guests) return 'За столом недостаточно мест';
     if (table.occupied) return 'Стол ещё занят. Сначала освободите его';
 
     _replace(reservations, (Reservation x) => x.id == id,
