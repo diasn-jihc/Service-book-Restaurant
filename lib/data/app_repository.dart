@@ -502,7 +502,11 @@ class AppRepository {
   /// Отмена брони (гостем или рестораном). Предзаказ тоже отменяется.
   Future<void> cancelReservation(String id) async {
     final r = reservationById(id);
-    if (r == null) return;
+    if (r == null ||
+        (r.status != ReservationStatus.pending &&
+            r.status != ReservationStatus.confirmed)) {
+      return;
+    }
     _replace(reservations, (Reservation x) => x.id == id,
         r.copyWith(status: ReservationStatus.cancelled));
 
