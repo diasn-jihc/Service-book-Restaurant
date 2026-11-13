@@ -10,6 +10,7 @@ import '../../utils/phone.dart';
 import '../../widgets/city_picker.dart';
 import '../../widgets/field_decoration.dart';
 import '../../widgets/password_field.dart';
+import 'verify_phone_screen.dart';
 
 /// Регистрация гостя (клиента).
 class RegisterGuestScreen extends StatefulWidget {
@@ -64,6 +65,27 @@ class _RegisterGuestScreenState extends State<RegisterGuestScreen> {
     );
     if (!mounted) return;
     setState(() => _busy = false);
+
+    if (result.requiresPhoneVerification) {
+      final phone = result.verificationPhone!;
+      final user = await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => VerifyPhoneScreen(
+            phone: phone,
+            onVerify: (code) => context.data.run(
+              (repo) => repo.verifyGuestPhone(phone, code),
+            ),
+            onResend: () => context.data.run(
+              (repo) => repo.resendPhoneSignupCode(phone),
+            ),
+          ),
+        ),
+      );
+      if (!mounted || user == null) return;
+      context.read<AuthBloc>().add(SessionStarted(user));
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      return;
+    }
 
     final user = result.user;
     if (user == null) {

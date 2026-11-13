@@ -14,6 +14,7 @@ import '../../widgets/field_decoration.dart';
 import '../../widgets/password_field.dart';
 import '../../widgets/photo_picker_row.dart';
 import '../../widgets/section_title.dart';
+import 'verify_phone_screen.dart';
 
 /// Регистрация ресторана: аккаунт администратора + данные заведения.
 class RegisterRestaurantScreen extends StatefulWidget {
@@ -115,6 +116,44 @@ class _RegisterRestaurantScreenState extends State<RegisterRestaurantScreen> {
     );
     if (!mounted) return;
     setState(() => _busy = false);
+
+    if (result.requiresPhoneVerification) {
+      final phone = result.verificationPhone!;
+      final user = await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => VerifyPhoneScreen(
+            phone: phone,
+            onVerify: (code) async {
+              final verified = await context.data.run(
+                (repo) => repo.verifyGuestPhone(phone, code),
+              );
+              if (verified == null) return null;
+              return context.data.run(
+                (repo) => repo.finishRestaurantRegistration(
+                  adminName: _adminCtrl.text,
+                  phone: phone,
+                  name: _nameCtrl.text,
+                  city: _city,
+                  address: _addressCtrl.text,
+                  cuisine: _cuisine,
+                  description: _descCtrl.text,
+                  openMinutes: _open,
+                  closeMinutes: _close,
+                  tablesCount: _tablesCount,
+                ),
+              );
+            },
+            onResend: () => context.data.run(
+              (repo) => repo.resendPhoneSignupCode(phone),
+            ),
+          ),
+        ),
+      );
+      if (!mounted || user == null) return;
+      context.read<AuthBloc>().add(SessionStarted(user));
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      return;
+    }
 
     final user = result.user;
     if (user == null) {

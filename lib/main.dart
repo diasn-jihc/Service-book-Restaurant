@@ -17,15 +17,17 @@ import 'screens/guest/guest_shell.dart';
 import 'screens/staff/staff_shell.dart';
 import 'services/api_client.dart';
 import 'services/photo_service.dart';
+import 'services/supabase_backend.dart';
 import 'services/storage_service.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('ru'); // русские даты
+  final backend = await SupabaseBackend.initialize();
   final prefs = await SharedPreferences.getInstance();
   final store = StorageService(prefs);
-  final repo = AppRepository(store);
+  final repo = AppRepository(store, backend: backend);
   await repo.load();
 
   runApp(StolikApp(store: store, repo: repo));

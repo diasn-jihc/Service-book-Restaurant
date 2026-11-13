@@ -18,6 +18,19 @@ enabling the phone provider and configuring an SMS provider in Supabase Auth.
 The public app key may be passed at build time; never include a service-role key
 in the Flutter app.
 
+For local cloud development, create a Supabase project, configure Phone auth
+and an SMS provider, then apply the SQL in
+`supabase/migrations/202611130001_initial_schema.sql`. Run the app with:
+
+```sh
+flutter run --dart-define=SUPABASE_URL=https://YOUR_PROJECT.supabase.co \
+  --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
+```
+
+Leave both values unset to use the local demo mode. Only the Supabase
+publishable key belongs in a client app; database access is restricted with
+row-level security and authenticated server procedures.
+
 Push notifications also need a Firebase project, Android/iOS app registrations,
 and APNs credentials for iOS. Until those are configured, reservation status
 remains visible only inside the app.

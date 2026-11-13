@@ -137,9 +137,18 @@ class AppUser {
 class AuthResult {
   final AppUser? user;
   final String? error;
+  final String? verificationPhone;
 
-  const AuthResult.ok(AppUser this.user) : error = null;
-  const AuthResult.fail(String this.error) : user = null;
+  const AuthResult.ok(AppUser this.user)
+      : error = null,
+        verificationPhone = null;
+  const AuthResult.fail(String this.error)
+      : user = null,
+        verificationPhone = null;
+  const AuthResult.verificationRequired(this.verificationPhone)
+      : user = null,
+        error = null;
 
   bool get isOk => user != null;
+  bool get requiresPhoneVerification => verificationPhone != null;
 }

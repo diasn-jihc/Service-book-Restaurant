@@ -1,3 +1,5 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../constants.dart';
 import '../models/checklist_item.dart';
 import '../models/dining_table.dart';
@@ -9,6 +11,7 @@ import '../models/review.dart';
 import '../models/service_entry.dart';
 import '../models/user.dart';
 import '../services/storage_service.dart';
+import '../services/supabase_backend.dart';
 import '../utils/password.dart';
 import '../utils/phone.dart';
 import 'seed_data.dart';
@@ -18,9 +21,11 @@ import 'seed_data.dart';
 /// сервер (Firebase и т.п.), нужно заменить только этот файл — экраны
 /// работают через его методы.
 class AppRepository {
-  AppRepository(this._store);
+  AppRepository(this._store, {SupabaseBackend? backend}) : _backend = backend;
 
   final StorageService _store;
+  final SupabaseBackend? _backend;
+  AppUser? _remoteUser;
 
   List<AppUser> users = [];
   List<Restaurant> restaurants = [];
@@ -40,6 +45,34 @@ class AppRepository {
   // ===================== загрузка и сохранение =====================
 
   Future<void> load() async {
+    if (_backend != null) {
+      final snapshot = await _backend.loadSnapshot();
+      if (snapshot == null) {
+        _remoteUser = null;
+        users = [];
+        restaurants = [];
+        tables = [];
+        dishes = [];
+        reservations = [];
+        orders = [];
+        reviews = [];
+        entries = [];
+        checklist = [];
+        return;
+      }
+      _remoteUser = snapshot.currentUser;
+      users = snapshot.users;
+      restaurants = snapshot.restaurants;
+      tables = snapshot.tables;
+      dishes = snapshot.dishes;
+      reservations = snapshot.reservations;
+      orders = snapshot.orders;
+      reviews = snapshot.reviews;
+      entries = snapshot.entries;
+      checklist = snapshot.checklist;
+      return;
+    }
+
     users = _store.readList('users', AppUser.fromJson);
     restaurants = _store.readList('restaurants', Restaurant.fromJson);
     tables = _store.readList('tables', DiningTable.fromJson);
@@ -90,15 +123,25 @@ class AppRepository {
   // ===================== сессия =====================
 
   AppUser? restoreSession() {
+    if (_backend != null) return _remoteUser;
     final id = _store.readString('session_user');
     if (id == null) return null;
     return userById(id);
   }
 
-  Future<void> saveSession(String userId) =>
-      _store.writeString('session_user', userId);
+  Future<void> saveSession(String userId) async {
+    if (_backend != null) {
+      _remoteUser = userById(userId) ?? _remoteUser;
+      return;
+    }
+    await _store.writeString('session_user', userId);
+  }
 
-  Future<void> clearSession() => _store.remove('session_user');
+  Future<void> clearSession() async {
+    if (_backend != null) await _backend.signOut();
+    _remoteUser = null;
+    await _store.remove('session_user');
+  }
 
   // ===================== поиск по id =====================
 
@@ -113,6 +156,21 @@ class AppRepository {
       userById(userId)?.favoriteRestaurantIds.contains(restaurantId) ?? false;
 
   Future<void> toggleFavorite(String userId, String restaurantId) async {
+    if (_backend != null) {
+      final favorites = await _backend.toggleFavorite(restaurantId);
+      final user = userById(userId);
+      if (user != null) {
+        _replace(
+          users,
+          (AppUser item) => item.id == userId,
+          user.copyWith(favoriteRestaurantIds: favorites),
+        );
+        if (_remoteUser?.id == userId) {
+          _remoteUser = _remoteUser!.copyWith(favoriteRestaurantIds: favorites);
+        }
+      }
+      return;
+    }
     final user = userById(userId);
     if (user == null || restaurantById(restaurantId) == null) return;
 
@@ -485,6 +543,24 @@ class AppRepository {
       return 'Этот стол уже занят на выбранное время. Выберите другой';
     }
 
+    if (_backend != null) {
+      try {
+        await _backend.createReservation(
+          id: newId(),
+          restaurantId: restaurant.id,
+          tableId: tableId,
+          start: start,
+          guests: guests,
+          comment: comment,
+          items: items,
+        );
+        await load();
+        return null;
+      } catch (error) {
+        return _authError(error);
+      }
+    }
+
     final reservation = Reservation(
       id: newId(),
       restaurantId: restaurant.id,
@@ -523,6 +599,11 @@ class AppRepository {
   Future<void> confirmReservation(String id) async {
     final r = reservationById(id);
     if (r == null || r.status != ReservationStatus.pending) return;
+    if (_backend != null) {
+      await _backend.confirmReservation(id);
+      await load();
+      return;
+    }
     _replace(reservations, (Reservation x) => x.id == id,
         r.copyWith(status: ReservationStatus.confirmed));
     await saveReservations();
@@ -534,6 +615,11 @@ class AppRepository {
     if (r == null ||
         (r.status != ReservationStatus.pending &&
             r.status != ReservationStatus.confirmed)) {
+      return;
+    }
+    if (_backend != null) {
+      await _backend.cancelReservation(id);
+      await load();
       return;
     }
     _replace(reservations, (Reservation x) => x.id == id,
@@ -559,6 +645,16 @@ class AppRepository {
     if (table == null) return 'Стол не найден';
     if (table.seats < r.guests) return 'За столом недостаточно мест';
     if (table.occupied) return 'Стол ещё занят. Сначала освободите его';
+
+    if (_backend != null) {
+      try {
+        await _backend.seatReservation(id);
+        await load();
+        return null;
+      } catch (error) {
+        return _authError(error);
+      }
+    }
 
     _replace(reservations, (Reservation x) => x.id == id,
         r.copyWith(status: ReservationStatus.seated));
@@ -774,6 +870,22 @@ class AppRepository {
     required String phone,
     required String password,
   }) async {
+    if (_backend != null) {
+      try {
+        final user = await _backend.signUpGuest(
+          name: name,
+          phone: phone,
+          password: password,
+        );
+        if (user == null) {
+          return AuthResult.verificationRequired(normalizePhone(phone));
+        }
+        await load();
+        return AuthResult.ok(_remoteUser ?? user);
+      } catch (error) {
+        return AuthResult.fail(_authError(error));
+      }
+    }
     if (userByPhone(phone) != null) {
       return const AuthResult.fail(
           'Этот номер уже зарегистрирован. Войдите в аккаунт');
@@ -809,6 +921,33 @@ class AppRepository {
     required int tablesCount,
     required List<String> photos,
   }) async {
+    if (_backend != null) {
+      try {
+        final user = await _backend.signUpGuest(
+          name: adminName,
+          phone: phone,
+          password: password,
+        );
+        if (user == null) {
+          return AuthResult.verificationRequired(normalizePhone(phone));
+        }
+        await _registerRestaurantRemotely(
+          id: newId(),
+          phone: phone,
+          name: name,
+          city: city,
+          address: address,
+          cuisine: cuisine,
+          description: description,
+          openMinutes: openMinutes,
+          closeMinutes: closeMinutes,
+          tablesCount: tablesCount,
+        );
+        return AuthResult.ok(_remoteUser ?? user);
+      } catch (error) {
+        return AuthResult.fail(_authError(error));
+      }
+    }
     if (userByPhone(phone) != null) {
       return const AuthResult.fail(
           'Этот номер уже зарегистрирован. Войдите в аккаунт');
@@ -858,7 +997,101 @@ class AppRepository {
     return AuthResult.ok(admin);
   }
 
-  AuthResult login(String phone, String password) {
+  Future<AppUser?> verifyGuestPhone(String phone, String token) async {
+    if (_backend == null) return null;
+    try {
+      final user = await _backend.verifyPhone(phone, token);
+      if (user == null) return null;
+      await load();
+      return _remoteUser;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> resendPhoneSignupCode(String phone) async {
+    if (_backend == null) return;
+    await _backend.resendPhoneSignupCode(phone);
+  }
+
+  Future<AppUser?> finishRestaurantRegistration({
+    required String adminName,
+    required String phone,
+    required String name,
+    required String city,
+    required String address,
+    required String cuisine,
+    required String description,
+    required int openMinutes,
+    required int closeMinutes,
+    required int tablesCount,
+  }) async {
+    if (_backend == null) return null;
+    try {
+      await _registerRestaurantRemotely(
+        id: newId(),
+        phone: phone,
+        name: name,
+        city: city,
+        address: address,
+        cuisine: cuisine,
+        description: description,
+        openMinutes: openMinutes,
+        closeMinutes: closeMinutes,
+        tablesCount: tablesCount,
+      );
+      return _remoteUser;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _registerRestaurantRemotely({
+    required String id,
+    required String phone,
+    required String name,
+    required String city,
+    required String address,
+    required String cuisine,
+    required String description,
+    required int openMinutes,
+    required int closeMinutes,
+    required int tablesCount,
+  }) async {
+    await _backend!.registerRestaurant(
+      id: id,
+      name: name.trim(),
+      city: city,
+      address: address.trim(),
+      description: description.trim(),
+      cuisine: cuisine,
+      phone: normalizePhone(phone),
+      openMinutes: openMinutes,
+      closeMinutes: closeMinutes,
+      tablesCount: tablesCount,
+    );
+    await load();
+  }
+
+  String _authError(Object error) {
+    if (error is AuthException) return error.message;
+    if (error is PostgrestException) return error.message;
+    return 'Could not complete authentication. Please try again.';
+  }
+
+  Future<AuthResult> login(String phone, String password) async {
+    if (_backend != null) {
+      try {
+        final user = await _backend.signIn(phone, password);
+        if (user == null) {
+          return const AuthResult.fail('User profile was not found.');
+        }
+        await load();
+        return AuthResult.ok(_remoteUser ?? user);
+      } catch (error) {
+        return AuthResult.fail(_authError(error));
+      }
+    }
     final user = userByPhone(phone);
     if (user == null || hashPassword(password, user.salt) != user.passwordHash) {
       return const AuthResult.fail('Неверный номер или пароль');

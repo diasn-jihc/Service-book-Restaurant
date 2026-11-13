@@ -33,7 +33,7 @@ class AuthState {
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc(this._repo) : super(AuthState(user: _repo.restoreSession())) {
     on<LoginRequested>((event, emit) async {
-      final result = _repo.login(event.phone, event.password);
+      final result = await _repo.login(event.phone, event.password);
       final user = result.user;
       if (user == null) {
         emit(AuthState(error: result.error));
